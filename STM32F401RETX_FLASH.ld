@@ -162,6 +162,15 @@ SECTIONS
     __bss_end__ = _ebss;
   } >RAM
 
+  /* RAM not cleared on reset — used by the test suite runner */
+  .noinit (NOLOAD) :
+  {
+    . = ALIGN(4);
+    *(.noinit)
+    *(.noinit*)
+    . = ALIGN(4);
+  } >RAM
+
   /* User_heap_stack section, used to check that there is enough "RAM" Ram  type memory left */
   ._user_heap_stack :
   {
