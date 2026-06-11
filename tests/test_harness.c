@@ -16,6 +16,7 @@ typedef struct {
 
 /* Survives NVIC_SystemReset so the suite can resume at the next test */
 static test_suite_state_t g_suite __attribute__((section(".noinit")));
+static int g_single_test = -1;
 
 extern void (*const g_test_fns[])(void);
 extern const char *const g_test_names[];
@@ -23,7 +24,8 @@ extern const unsigned g_test_count;
 
 static void test_suite_finish(int passed, const char *reason)
 {
-	const char *name = g_test_names[g_suite.index];
+	const char *name = (g_single_test >= 0) ? g_test_names[g_single_test]
+						: g_test_names[g_suite.index];
 
 	if (passed) {
 		printf("[PASS] %s\r\n", name);
@@ -41,6 +43,13 @@ static void test_suite_finish(int passed, const char *reason)
 			printf("__AUTOTEST__$FAIL$\r\n");
 		}
 		g_suite.failed++;
+	}
+
+	if (g_single_test >= 0) {
+		printf("\r\n===== SINGLE TEST DONE =====\r\n");
+		HAL_Delay(200);
+		while (1) {
+		}
 	}
 
 	g_suite.index++;
@@ -118,6 +127,25 @@ void test_suite_run(void)
 
 	g_suite.attempted = 1;
 	g_test_fns[g_suite.index]();
+
+	test_suite_finish(0, "test returned unexpectedly");
+}
+
+void test_suite_run_one(unsigned index)
+{
+	if (index >= g_test_count) {
+		printf("test_suite_run_one: invalid index %u\r\n", index);
+		while (1) {
+		}
+	}
+
+	g_single_test = (int)index;
+
+	printf("\r\n===== Single test: %s (%u) =====\r\n",
+	       g_test_names[index], index);
+	printf("\r\n\r\n__AUTOTEST__$START$%s\r\n", g_test_names[index]);
+
+	g_test_fns[index]();
 
 	test_suite_finish(0, "test returned unexpectedly");
 }

@@ -548,6 +548,14 @@ static void test11(void)
 static void test12_task(void *args)
 {
 	(void)args;
+
+	/* Kernel is running; clear the mask so normal scheduling works. */
+	__set_BASEPRI(0);
+	__DSB();
+	__ISB();
+
+	autotest_pass();
+
 	while (1) {
 		osYield();
 	}
@@ -557,6 +565,10 @@ static void test12(void)
 {
 	osKernelInit();
 
+	/* Mask configurable IRQs before create/start. SVC (priority 0) still
+	 * works; PendSV is blocked only while in thread mode on main. */
+	__set_BASEPRI(1 << (8 - __NVIC_PRIO_BITS));
+
 	TCB tcb = {
 		.ptask = test12_task,
 		.stack_high = 0,
@@ -565,20 +577,18 @@ static void test12(void)
 		.tid = TID_NULL,
 	};
 
-	/* Create while interrupts are normal (already proved by tests 0-11) */
 	autotest_assert_eq(osCreateTask(&tcb), RTX_OK);
+	autotest_assert_neq(tcb.tid, TID_NULL);
 
-	/* Mask configurable IRQs, then start — verifies osKernelStart is an
-	 * SVC call that succeeds even when PendSV is blocked by BASEPRI. */
-	__set_BASEPRI(1 << (8 - __NVIC_PRIO_BITS));
+	/* Pends PendSV, but BASEPRI holds it — control returns to main */
 	autotest_assert_eq(osKernelStart(), RTX_OK);
+
+	/* Unmask: the pending context switch fires and the task passes */
 	__set_BASEPRI(0);
 	__DSB();
 	__ISB();
 
-	/* osKernelStart returned via SVC while masked — that is what Test 12
-	 * checks. Running the new task from main is not required. */
-	autotest_pass();
+	autotest_fail("task never ran");
 }
 
 /* ===================== Suite dispatch table ===================== */

@@ -112,6 +112,12 @@ static void k_kernel_init(void)
 	init_task_stack(&tasks[TID_NULL]);
 	tasks[TID_NULL].state = READY;
 
+	/* All 4 priority bits = preemption (PRIGROUP 0b011). With GROUP_0,
+	 * any nonzero BASEPRI raises execution priority to 0 and a subsequent
+	 * svc escalates to HardFault. Set here so the kernel doesn't depend
+	 * on CubeMX-generated MspInit. */
+	NVIC_SetPriorityGrouping(0x3);
+
 	/* PendSV must be the lowest priority so context switches run last */
 	NVIC_SetPriority(PendSV_IRQn, (1UL << __NVIC_PRIO_BITS) - 1UL);
 

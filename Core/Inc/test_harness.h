@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 void test_suite_run(void);
+void test_suite_run_one(unsigned index);
 void test_harness_pass(void);
 void test_harness_fail(const char *reason);
 void test_harness_assert_eq_impl(intmax_t a, const char *a_str, intmax_t b, const char *b_str);
