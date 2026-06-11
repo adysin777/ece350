@@ -1,0 +1,13 @@
+# Build output
+Debug/
+Release/
+
+# STM32CubeIDE / Eclipse local state
+.metadata/
+.settings/stm32cubeide.project.prefs
+
+# macOS
+.DS_Store
+
+# Optional personal debug launch configs
+*.launch
